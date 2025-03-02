@@ -46,7 +46,7 @@ test! { kebab ->
 test! { media ->
     @media (min-width: 600px) {}
 
-    @"@media ( min-width:600px ) { }"
+    @"@media( min-width:600px ) { }"
 }
 
 test! { pseudoclass ->
@@ -62,4 +62,10 @@ test! { nesting_op ->
     &:hover {}
 
     @"&{ } &.class { } &:hover { }"
+}
+
+test! { function_call ->
+    color: var(--property);
+
+    @"color:var( --property ) ;"
 }

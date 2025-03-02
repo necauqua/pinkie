@@ -11,7 +11,7 @@ check-all:
     cargo nextest run
     cargo test --doc
 
-publish:
+publish: check-all
     cargo publish -p pinkie-parser
     cargo publish -p pinkie-macros
     cargo publish

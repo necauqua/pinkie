@@ -45,9 +45,11 @@ fn parse_recursive(input: TokenStream, out: &mut CssData) {
 
                 out.css.push_str(ident.to_string().trim_start_matches("r#"));
 
-                // allow kebab-case and pseudo-classes
+                // allow kebab-case, pseudo-classes and css function calls
                 let next = input.peek();
-                if !matches!(next, Some(TokenTree::Punct(p)) if matches!(p.as_char(), '-' | ':')) {
+                if !matches!(next, Some(TokenTree::Punct(p)) if matches!(p.as_char(), '-' | ':'))
+                    && !matches!(next, Some(TokenTree::Group(g)) if g.delimiter() == Delimiter::Parenthesis)
+                {
                     out.css.push(' ');
                 }
             }

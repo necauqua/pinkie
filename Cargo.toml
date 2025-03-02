@@ -3,21 +3,20 @@ resolver = "2"
 members = ["pinkie-macros", "pinkie-parser"]
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Anton Bulakh <him@necauq.ua>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
 rust-version = "1.60.0"
 homepage = "https://github.com/necauqua/pinkie"
 repository = "https://github.com/necauqua/pinkie"
-# documentation = ""
 categories = ["web-programming"]
 keywords = ["scoped", "css", "macros", "web"]
 
 [workspace.dependencies]
 lightningcss = { version = "1.0.0-alpha.63" }
 log = "0.4"
-pinkie-parser = { path = "pinkie-parser", version = "0.1.1" }
+pinkie-parser = { path = "pinkie-parser", version = "0.1.2" }
 proc-macro2 = "1"
 quote = "1"
 sha2 = "0.10"
@@ -35,12 +34,11 @@ rust-version.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-# documentation.workspace = true
 keywords.workspace = true
 
 [dependencies]
 inventory = "0.3"
-pinkie-macros = { path = "pinkie-macros", version = "0.1.1" }
+pinkie-macros = { path = "pinkie-macros", version = "0.1.2" }
 
 # dynamic
 log = { workspace = true, optional = true }

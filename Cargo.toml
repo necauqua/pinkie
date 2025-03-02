@@ -3,12 +3,11 @@ resolver = "2"
 members = ["pinkie-macros", "pinkie-parser"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Anton Bulakh <him@necauq.ua>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
 rust-version = "1.60.0"
-readme = "readme.md"
 homepage = "https://github.com/necauqua/pinkie"
 repository = "https://github.com/necauqua/pinkie"
 # documentation = ""
@@ -18,7 +17,7 @@ keywords = ["scoped", "css", "macros", "web"]
 [workspace.dependencies]
 lightningcss = { version = "1.0.0-alpha.63" }
 log = "0.4"
-pinkie-parser = { path = "pinkie-parser", version = "0.1.0" }
+pinkie-parser = { path = "pinkie-parser", version = "0.1.1" }
 proc-macro2 = "1"
 quote = "1"
 sha2 = "0.10"
@@ -28,6 +27,7 @@ xxhash-rust = { version = "0.8", features = ["xxh64"] }
 [package]
 name = "pinkie"
 description = "(Almost) compile-time scoped CSS-in-Rust"
+readme = "readme.md"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -40,7 +40,7 @@ keywords.workspace = true
 
 [dependencies]
 inventory = "0.3"
-pinkie-macros = { path = "pinkie-macros", version = "0.1.0" }
+pinkie-macros = { path = "pinkie-macros", version = "0.1.1" }
 
 # dynamic
 log = { workspace = true, optional = true }
@@ -51,11 +51,7 @@ insta = "1.42"
 maud = "0.27"  # only for readme doctest 🤷
 
 [features]
-default = [
-    "validation",
-    "location",
-    "dynamic",    # XXX FIXME IMMEDIATELY remove "dynamic", my lazy ass just didn't want to configure enabled features in rust-analyzer in zed ugh
-]
+default = ["validation", "location"]
 validation = ["pinkie-macros/validation"]
 location = ["pinkie-macros/location"]
 dynamic = ["location", "dep:pinkie-parser", "dep:log"]

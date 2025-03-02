@@ -1,0 +1,19 @@
+[package]
+name = "pinkie-parser"
+description = "Internal crate. Please use 'pinkie' instead."
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+# documentation.workspace = true
+keywords.workspace = true
+
+[dependencies]
+proc-macro2 = { workspace = true }
+syn = { workspace = true }
+
+[features]
+spans = []

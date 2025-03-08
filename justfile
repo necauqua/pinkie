@@ -16,6 +16,7 @@ bump version:
         -e 's/^version = ".*?"$/version = "{{version}}"/' \
         -e '/path = / s/version = ".*?"/version = "{{version}}"/' \
         Cargo.toml
+    cargo update --offline
     jj ci -m 'release: {{version}}'
     git rtag v{{version}}
 

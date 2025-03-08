@@ -88,7 +88,10 @@ fn parse_recursive(input: TokenStream, out: &mut CssData) {
                     }
                 }
                 out.css.push_str(&str);
-                out.css.push(' ');
+
+                if !matches!(input.peek(), Some(TokenTree::Punct(p)) if p.as_char() == '%') {
+                    out.css.push(' ');
+                }
             }
         }
     }

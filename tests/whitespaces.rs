@@ -69,3 +69,11 @@ test! { function_call ->
 
     @"color:var( --property ) ;"
 }
+
+test! { suffixes ->
+    font-size: 1rem;
+    margin: 15px;
+    padding: 25%;
+
+    @"font-size:1rem ; margin:15px ; padding:25% ;"
+}

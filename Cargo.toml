@@ -3,7 +3,7 @@ resolver = "2"
 members = ["pinkie-macros", "pinkie-parser"]
 
 [workspace.package]
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Anton Bulakh <him@necauq.ua>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
@@ -16,7 +16,7 @@ keywords = ["scoped", "css", "macros", "web"]
 [workspace.dependencies]
 lightningcss = { version = "1.0.0-alpha.63" }
 log = "0.4"
-pinkie-parser = { path = "pinkie-parser", version = "0.1.2" }
+pinkie-parser = { path = "pinkie-parser", version = "0.1.3" }
 proc-macro2 = "1"
 quote = "1"
 sha2 = "0.10"
@@ -38,7 +38,7 @@ keywords.workspace = true
 
 [dependencies]
 inventory = "0.3"
-pinkie-macros = { path = "pinkie-macros", version = "0.1.2" }
+pinkie-macros = { path = "pinkie-macros", version = "0.1.3" }
 
 # dynamic
 log = { workspace = true, optional = true }

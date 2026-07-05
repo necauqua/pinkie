@@ -45,6 +45,7 @@ pinkie-parser = { workspace = true, optional = true }
 
 [dev-dependencies]
 insta = "1.42"
+log = { workspace = true }  # for the dynamic fallback test logger
 maud = "0.27"  # only for readme doctest 🤷
 
 [features]

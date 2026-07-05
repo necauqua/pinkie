@@ -296,4 +296,63 @@ mod dynamic {
             }
         })
     }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn invocation_boundary() {
+            assert_eq!(find_invocation("css! { a }"), Some(" a }"));
+            assert_eq!(find_invocation("css!{a}"), Some("a}"));
+            assert_eq!(find_invocation("css!(a)"), Some("a)"));
+            assert_eq!(find_invocation("pinkie::css! { a }"), Some(" a }"));
+            // not at an identifier boundary - skipped over
+            assert_eq!(find_invocation("my_css! { a } css! { b }"), Some(" b }"));
+            assert_eq!(find_invocation("scss! { a }"), None);
+            assert_eq!(find_invocation("no invocation"), None);
+            // `css!` not followed by an open delimiter is not a call
+            assert_eq!(find_invocation("\"css!\" css! { a }"), Some(" a }"));
+        }
+
+        #[test]
+        fn block_delimiters() {
+            assert_eq!(find_block("color: red; } after"), Some("color: red; "));
+            assert_eq!(find_block("a { b { } } }"), Some("a { b { } } "));
+            assert_eq!(find_block("mixed ([{}]) }"), Some("mixed ([{}]) "));
+            assert_eq!(find_block("unterminated {"), None);
+        }
+
+        #[test]
+        fn block_skips_comments() {
+            assert_eq!(find_block("// }\n }"), Some("// }\n "));
+            assert_eq!(find_block("// } no newline"), None);
+            assert_eq!(find_block("/* } */ }"), Some("/* } */ "));
+            // rust block comments nest
+            assert_eq!(find_block("/* /* } */ } */ }"), Some("/* /* } */ } */ "));
+            // a lone slash is not a comment
+            assert_eq!(find_block("a / b }"), Some("a / b "));
+        }
+
+        #[test]
+        fn block_skips_strings() {
+            assert_eq!(find_block(r#" "}" }"#), Some(r#" "}" "#));
+            assert_eq!(find_block(r#" "\"}" }"#), Some(r#" "\"}" "#));
+            assert_eq!(find_block(r###" r"}" }"###), Some(r###" r"}" "###));
+            assert_eq!(find_block(r###" r#"}"# }"###), Some(r###" r#"}"# "###));
+            // raw string closing must have matching hashes
+            assert_eq!(find_block(r###" r##"}"# "## }"###), Some(r###" r##"}"# "## "###));
+            // `r` that is not a raw string prefix
+            assert_eq!(find_block("var(--r) }"), Some("var(--r) "));
+        }
+
+        #[test]
+        fn block_skips_char_literals() {
+            assert_eq!(find_block("'}' }"), Some("'}' "));
+            assert_eq!(find_block(r"'\'' }"), Some(r"'\'' "));
+            assert_eq!(find_block(r"'\u{7d}' }"), Some(r"'\u{7d}' "));
+            // lifetimes are not char literals
+            assert_eq!(find_block("&'a () }"), Some("&'a () "));
+        }
+    }
 }

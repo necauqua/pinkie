@@ -101,6 +101,12 @@ don't survive the trip:
   make it into the output (you likely don't want them there anyway).
 - Hex colors are hit-or-miss: `#fff` or `#c0ffee` happen to tokenize, but
   some digit/letter combinations don't form valid Rust tokens.
+- `em` units on fractional values (`1.5em`) don't tokenize - the `e` starts
+  a Rust float exponent. Other units (`rem`, `px`, `s`, ...) are fine.
+- `calc(100% - 2px)` loses the space after `-` (it's treated as a
+  kebab-case joiner), producing invalid `calc()`.
+- Attribute selectors gain a space (`input [type="text"]`), turning them
+  into descendant selectors.
 - Single-quoted strings are Rust char literals and generally won't tokenize;
   use double quotes.
 - String escapes follow Rust rules, not CSS ones.

@@ -90,10 +90,28 @@ fn main() {
 
 If you want custom class prefix you can have it by setting
 `PINKIE_CSS_CLASS_PREFIX` environment variable during compilation.
-You might want to do `cargo clean` once for it to take effect.
 
 And you can have the prefix be of any length, non-minimized, literally any
 compression algorithm will take care of it lol.
+
+## Known limitations
+Since the CSS is tokenized as Rust code, some things valid in plain CSS
+don't survive the trip:
+- Comments are Rust comments and are stripped - CSS `/* comments */` won't
+  make it into the output (you likely don't want them there anyway).
+- Hex colors are hit-or-miss: `#fff` or `#c0ffee` happen to tokenize, but
+  some digit/letter combinations don't form valid Rust tokens.
+- Single-quoted strings are Rust char literals and generally won't tokenize;
+  use double quotes.
+- String escapes follow Rust rules, not CSS ones.
+
+For all of these, the `r"raw string"` escape hatch has you covered.
+
+The `dynamic` feature reads source files at paths produced by `file!()`,
+which are relative to the workspace root - so it only works when the process
+runs with the workspace root as its working directory, and never for `css!`
+calls from dependencies. When it fails, it logs a warning and falls back to
+the statically embedded CSS.
 
 ## Inspiration
 A bit obviously inspired by `maud` and works great with it.

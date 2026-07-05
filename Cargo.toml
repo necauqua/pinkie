@@ -7,7 +7,7 @@ version = "0.1.3"
 authors = ["Anton Bulakh <him@necauq.ua>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
-rust-version = "1.60.0"
+rust-version = "1.82.0"
 homepage = "https://github.com/necauqua/pinkie"
 repository = "https://github.com/necauqua/pinkie"
 categories = ["web-programming"]
@@ -19,7 +19,6 @@ log = "0.4"
 pinkie-parser = { path = "pinkie-parser", version = "0.1.3" }
 proc-macro2 = "1"
 quote = "1"
-sha2 = "0.10"
 syn = "2"
 xxhash-rust = { version = "0.8", features = ["xxh64"] }
 

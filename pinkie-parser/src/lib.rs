@@ -81,7 +81,7 @@ fn parse_recursive(input: TokenStream, out: &mut CssData) {
                     // only usage of syn, can maybe drop?.
                     if let Ok(str) = syn::parse_str::<syn::LitStr>(&str) {
                         // replace newlines to keep simple span mapping
-                        let str = str.value().replace(|ch| ch == '\n' || ch == '\r', " ");
+                        let str = str.value().replace(['\n', '\r'], " ");
                         out.css.push_str(&str);
                         out.css.push(' ');
                         continue;

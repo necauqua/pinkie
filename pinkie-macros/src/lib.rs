@@ -14,21 +14,8 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     if let Err(e) = StyleSheet::parse(&format!(".dummy{{{css}}}"), ParserOptions::default()) {
         let err = format!("css error: {}", e.kind);
         if let Some(loc) = e.loc {
-            let offset = loc.column as usize - 8; // account for `.dummy{` and columns being 1-based
-
-            // println!("{css}");
-            // let mut prev = 0;
-            // let mut highlighted = false;
-            // for (pos, _) in &data.spans {
-            //     if *pos >= offset && !highlighted {
-            //         highlighted = true;
-            //         print!("{: >fill$}\x1b[1;31m*\x1b[0m", "", fill = pos - prev);
-            //     } else {
-            //         print!("{: >fill$}^", "", fill = pos - prev);
-            //     }
-            //     prev = *pos + 1; // account for ^ taking up a space
-            // }
-            // println!();
+            // account for `.dummy{` and columns being 1-based
+            let offset = (loc.column as usize).saturating_sub(8);
 
             let span = data
                 .spans
@@ -45,26 +32,23 @@ pub fn css(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         .map(Cow::Owned)
         .unwrap_or("pinkie-".into());
 
-    let hash = &format!("{:08x}", xxh64(css.as_bytes(), 0))[0..8];
-    let class = format!("{prefix}{hash}");
+    let hash = xxh64(css.as_bytes(), 0);
+    let class = format!("{prefix}{hash:016x}");
 
-    let (line, location) = if cfg!(feature = "location") {
-        (
-            quote!(
-                const LINE: usize = line!() as usize;
-            ),
-            quote! {
-                location: ::pinkie::Location {
-                    file: file!(),
-                    line: LINE,
-                },
+    let location = if cfg!(feature = "location") {
+        quote! {
+            location: ::pinkie::Location {
+                file: file!(),
+                line: line!() as usize,
             },
-        )
+        }
     } else {
-        (quote!(), quote!())
+        quote!()
     };
 
-    quote! {{ #line;
+    quote! {{
+        // make cargo track the env var and rebuild when it changes
+        const _: ::core::option::Option<&str> = ::core::option_env!("PINKIE_CSS_CLASS_PREFIX");
         const STYLE: ::pinkie::Style = ::pinkie::Style {
             class: #class,
             css: #css,

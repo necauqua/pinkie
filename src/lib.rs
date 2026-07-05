@@ -57,7 +57,7 @@ pub struct Style {
 
 impl Display for Style {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.class)
+        f.write_str(self.class)
     }
 }
 
@@ -151,29 +151,112 @@ mod dynamic {
             .map(|line| line.len())
             .sum();
 
-        let block = &source[line_pos..]
-            .split_once("css!")
-            .and_then(|(_, rest)| {
-                rest.trim_start()
-                    .strip_prefix(|ch| matches!(ch, '{' | '(' | '['))
-            })
-            .and_then(|input| {
-                let mut depth = 1;
-                for (i, ch) in input.char_indices() {
-                    match ch {
-                        '{' | '[' | '(' => depth += 1,
-                        '}' | ']' | ')' => depth -= 1,
-                        _ => {}
-                    }
+        let block = find_invocation(&source[line_pos..])
+            .and_then(find_block)
+            .ok_or("couldn't find css! macro call")?;
+
+        Ok(pinkie_parser::parse(block.parse()?).css)
+    }
+
+    /// Find the text right after the opening delimiter of a `css!` call,
+    /// making sure `css` is at an identifier boundary (so that e.g. an
+    /// identifier like `my_css` followed by `!` doesn't match).
+    fn find_invocation(mut source: &str) -> Option<&str> {
+        loop {
+            let idx = source.find("css!")?;
+            let boundary = source[..idx]
+                .chars()
+                .next_back()
+                .is_none_or(|ch| !ch.is_alphanumeric() && ch != '_');
+            source = &source[idx + 4..];
+            if boundary {
+                let rest = source.trim_start();
+                if rest.starts_with(['{', '(', '[']) {
+                    return Some(&rest[1..]);
+                }
+            }
+        }
+    }
+
+    /// Find the extent of the macro block by counting delimiters, skipping
+    /// over string/char literals and comments so that braces inside them
+    /// don't confuse the count.
+    fn find_block(input: &str) -> Option<&str> {
+        let bytes = input.as_bytes();
+        let mut depth = 1;
+        let mut i = 0;
+        while i < bytes.len() {
+            match bytes[i] {
+                b'{' | b'[' | b'(' => depth += 1,
+                b'}' | b']' | b')' => {
+                    depth -= 1;
                     if depth == 0 {
                         return Some(&input[..i]);
                     }
                 }
-                None
-            })
-            .ok_or("couldn't find css! macro call")?;
-
-        Ok(pinkie_parser::parse(block.parse()?).css)
+                // line comment
+                b'/' if bytes.get(i + 1) == Some(&b'/') => {
+                    i += input[i..].find('\n').unwrap_or(input.len() - i);
+                    continue;
+                }
+                // block comment (they nest in Rust)
+                b'/' if bytes.get(i + 1) == Some(&b'*') => {
+                    let mut comments = 1;
+                    i += 2;
+                    while i < bytes.len() && comments > 0 {
+                        match (bytes[i], bytes.get(i + 1)) {
+                            (b'/', Some(b'*')) => {
+                                comments += 1;
+                                i += 2;
+                            }
+                            (b'*', Some(b'/')) => {
+                                comments -= 1;
+                                i += 2;
+                            }
+                            _ => i += 1,
+                        }
+                    }
+                    continue;
+                }
+                // string literal
+                b'"' => {
+                    i += 1;
+                    while i < bytes.len() && bytes[i] != b'"' {
+                        i += if bytes[i] == b'\\' { 2 } else { 1 };
+                    }
+                }
+                // raw string literal
+                b'r' if matches!(bytes.get(i + 1), Some(b'"' | b'#')) => {
+                    let hashes = bytes[i + 1..].iter().take_while(|&&b| b == b'#').count();
+                    if bytes.get(i + 1 + hashes) == Some(&b'"') {
+                        let close = format!("\"{}", "#".repeat(hashes));
+                        i += 2 + hashes;
+                        i += input[i..].find(&close)? + close.len();
+                        continue;
+                    }
+                }
+                // char literal (but not a lifetime)
+                b'\'' => {
+                    let rest = &input[i + 1..];
+                    let mut chars = rest.chars();
+                    match chars.next() {
+                        Some('\\') => {
+                            i += 3; // skip the opening quote, backslash and one escape char
+                            while i < bytes.len() && bytes[i] != b'\'' {
+                                i += 1;
+                            }
+                        }
+                        Some(ch) if chars.next() == Some('\'') => {
+                            i += 1 + ch.len_utf8(); // ends on the closing quote
+                        }
+                        _ => {} // a lifetime or a lone quote, ignore
+                    }
+                }
+                _ => {}
+            }
+            i += 1;
+        }
+        None
     }
 
     /// Collect all `css!` styles into a single string under unique classes.
@@ -185,6 +268,12 @@ mod dynamic {
     /// This means that every time this function is called, it will return the most
     /// up-to-date CSS according to the source code, without requiring a
     /// Rust recompilation.
+    ///
+    /// Note that `file!()` paths are relative to the workspace root, so this
+    /// only works when the process working directory is the workspace root
+    /// (which is the common `cargo run` situation). When a source file cannot
+    /// be read or parsed (e.g. `css!` calls from dependencies), a warning is
+    /// logged and the static CSS embedded by the macro is used instead.
     ///
     /// Upgrading it into a hot-reload system is trivial, and left as an exercise
     /// to the reader.
@@ -198,10 +287,13 @@ mod dynamic {
         let mut files = Default::default();
         collect_impl(|style, out| match collect_dynamic(style, &mut files) {
             Ok(s) => out.push_str(&s),
-            Err(e) => log::warn!(
-                "dynamic css error (css! macro at {:?}): {e}",
-                style.location
-            ),
+            Err(e) => {
+                log::warn!(
+                    "dynamic css error (css! macro at {:?}), falling back to static: {e}",
+                    style.location
+                );
+                out.push_str(style.css);
+            }
         })
     }
 }

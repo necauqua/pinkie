@@ -1,4 +1,4 @@
-use proc_macro2::{Delimiter, TokenStream, TokenTree};
+use proc_macro2::{Delimiter, LineColumn, TokenStream, TokenTree};
 
 pub struct CssData {
     pub css: String,
@@ -6,73 +6,84 @@ pub struct CssData {
     pub spans: Vec<(usize, proc_macro2::Span)>,
 }
 
-/// Naively reimplement `TokenStream::to_string` with a few tweaks for
-/// CSS-significant (lack of) whitespace in a couple of specific places.
+/// Reimplement `TokenStream::to_string`, using span locations to decide the
+/// whitespace: two tokens are joined without a space exactly when they were
+/// adjacent in the source, and any gap (including newlines) collapses to a
+/// single space.
 ///
 /// Additionally, collect spans along with their offsets in the output string
-/// for pretty nice errors for the amount of effor it took.
+/// for pretty nice errors for the amount of effort it took.
 pub fn parse(input: TokenStream) -> CssData {
     let mut data = CssData {
         css: String::new(),
         #[cfg(feature = "spans")]
         spans: Vec::new(),
     };
-    parse_recursive(input, &mut data);
+    parse_recursive(input, &mut data, &mut None);
     data
 }
 
-fn parse_recursive(input: TokenStream, out: &mut CssData) {
-    let mut input = input.into_iter().peekable();
+fn parse_recursive(input: TokenStream, out: &mut CssData, prev_end: &mut Option<LineColumn>) {
+    // push a single space if there was any gap between the previous token
+    // and one starting at `start` in the source
+    let gap = |out: &mut CssData, prev_end: &Option<LineColumn>, start: LineColumn| {
+        if prev_end.is_some_and(|prev| prev != start) {
+            out.css.push(' ');
+        }
+    };
 
-    while let Some(tree) = input.next() {
+    for tree in input {
         match tree {
             TokenTree::Punct(punct) => {
+                gap(out, prev_end, punct.span().start());
+
                 #[cfg(feature = "spans")]
-                let pos = out.css.len();
+                out.spans.push((out.css.len(), punct.span()));
 
-                let ch = punct.as_char();
-                out.css.push(ch);
-                if !matches!(ch, '.' | '#' | '-' | '@' | ':' | '&') {
-                    #[cfg(feature = "spans")]
-                    out.spans.push((pos, punct.span()));
-
-                    out.css.push(' ');
-                }
+                out.css.push(punct.as_char());
+                *prev_end = Some(punct.span().end());
             }
             TokenTree::Ident(ident) => {
+                gap(out, prev_end, ident.span().start());
+
                 #[cfg(feature = "spans")]
                 out.spans.push((out.css.len(), ident.span()));
 
                 out.css.push_str(ident.to_string().trim_start_matches("r#"));
-
-                // allow kebab-case, pseudo-classes and css function calls
-                let next = input.peek();
-                if !matches!(next, Some(TokenTree::Punct(p)) if matches!(p.as_char(), '-' | ':'))
-                    && !matches!(next, Some(TokenTree::Group(g)) if g.delimiter() == Delimiter::Parenthesis)
-                {
-                    out.css.push(' ');
-                }
+                *prev_end = Some(ident.span().end());
             }
             TokenTree::Group(group) => {
                 let (open, close) = match group.delimiter() {
-                    Delimiter::Brace => ("{ ", "} "),
-                    Delimiter::Parenthesis => ("( ", ") "),
-                    Delimiter::Bracket => ("[ ", "] "),
-                    Delimiter::None => ("", ""),
+                    Delimiter::Brace => ('{', '}'),
+                    Delimiter::Parenthesis => ('(', ')'),
+                    Delimiter::Bracket => ('[', ']'),
+                    Delimiter::None => {
+                        parse_recursive(group.stream(), out, prev_end);
+                        continue;
+                    }
                 };
+
+                gap(out, prev_end, group.span_open().start());
 
                 #[cfg(feature = "spans")]
                 out.spans.push((out.css.len(), group.span_open()));
 
-                out.css.push_str(open);
-                parse_recursive(group.stream(), out);
+                out.css.push(open);
+                *prev_end = Some(group.span_open().end());
+
+                parse_recursive(group.stream(), out, prev_end);
+
+                gap(out, prev_end, group.span_close().start());
 
                 #[cfg(feature = "spans")]
                 out.spans.push((out.css.len(), group.span_close()));
 
-                out.css.push_str(close);
+                out.css.push(close);
+                *prev_end = Some(group.span_close().end());
             }
             TokenTree::Literal(lit) => {
+                gap(out, prev_end, lit.span().start());
+
                 #[cfg(feature = "spans")]
                 out.spans.push((out.css.len(), lit.span()));
 
@@ -81,17 +92,13 @@ fn parse_recursive(input: TokenStream, out: &mut CssData) {
                     // only usage of syn, can maybe drop?.
                     if let Ok(str) = syn::parse_str::<syn::LitStr>(&str) {
                         // replace newlines to keep simple span mapping
-                        let str = str.value().replace(['\n', '\r'], " ");
-                        out.css.push_str(&str);
-                        out.css.push(' ');
+                        out.css.push_str(&str.value().replace(['\n', '\r'], " "));
+                        *prev_end = Some(lit.span().end());
                         continue;
                     }
                 }
                 out.css.push_str(&str);
-
-                if !matches!(input.peek(), Some(TokenTree::Punct(p)) if p.as_char() == '%') {
-                    out.css.push(' ');
-                }
+                *prev_end = Some(lit.span().end());
             }
         }
     }

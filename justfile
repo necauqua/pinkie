@@ -9,7 +9,9 @@ check-all:
     cargo nextest run --no-default-features --features location
     cargo nextest run --no-default-features --features dynamic
     cargo nextest run
+    cargo nextest run --all-features
     cargo test --doc
+    cargo clippy --all-features --all-targets
 
 bump version:
     sed -Ei \

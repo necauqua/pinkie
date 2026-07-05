@@ -33,12 +33,12 @@ mod collect_other_file;
 fn collect_lazy_lock() {
     static STYLES: LazyLock<String> = LazyLock::new(|| stable_order(pinkie::collect()));
 
-    insta::assert_snapshot!(*STYLES, @r#"
-    .pinkie-22f3a41442cb507b{color:rebeccapurple ; }
-    .pinkie-80c5f96d8579b192{color:green ; }
-    .pinkie-8b96cd16a1f1583b{color:blue ; }
-    .pinkie-9181c1edda08b6f9{color:red ; }
-    "#);
+    insta::assert_snapshot!(*STYLES, @r"
+    .pinkie-11d3b111592ca627{color: rebeccapurple;}
+    .pinkie-17e16f7ebf49dd2c{color: green;}
+    .pinkie-dc7c21667b5f60bd{color: red;}
+    .pinkie-fcf5df288c819b1c{color: blue;}
+    ");
 }
 
 #[test]
@@ -55,15 +55,15 @@ fn collect() {
 
     insta::assert_snapshot!(result, @r#"
     <style>
-    .pinkie-22f3a41442cb507b{color:rebeccapurple ; }
-    .pinkie-80c5f96d8579b192{color:green ; }
-    .pinkie-8b96cd16a1f1583b{color:blue ; }
-    .pinkie-9181c1edda08b6f9{color:red ; }
+    .pinkie-11d3b111592ca627{color: rebeccapurple;}
+    .pinkie-17e16f7ebf49dd2c{color: green;}
+    .pinkie-dc7c21667b5f60bd{color: red;}
+    .pinkie-fcf5df288c819b1c{color: blue;}
     </style>
-    <div class="pinkie-9181c1edda08b6f9">first</div>
-    <div class="pinkie-80c5f96d8579b192">second</div>
-    <div class="pinkie-8b96cd16a1f1583b">third</div>
-    <div class="pinkie-22f3a41442cb507b">fourth</div>
+    <div class="pinkie-dc7c21667b5f60bd">first</div>
+    <div class="pinkie-17e16f7ebf49dd2c">second</div>
+    <div class="pinkie-fcf5df288c819b1c">third</div>
+    <div class="pinkie-11d3b111592ca627">fourth</div>
     "#);
 }
 

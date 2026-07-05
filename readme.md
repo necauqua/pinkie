@@ -14,10 +14,12 @@ This relies on CSS Nesting - so it is highly recommended to additionally
 transpile it by something like `lightningcss`.
 
 Pinkie does not do any CSS parsing on its own, it just translates Rust tokens
-into a string with a few CSS-specific heuristics about whitespaces.
+into a string, using token span locations to tell whether adjacent tokens
+should be joined or separated by a space (any run of whitespace collapses
+to a single space, which is fine for CSS).
 
-In case those fail, you can also include CSS verbatim using `r"raw strings"`,
-their content will be included as is.
+In case something doesn't tokenize as Rust, you can also include CSS verbatim
+using `r"raw strings"`, their content will be included as is.
 
 Sadly, it's close to impossible to reliably collect macro invocations across
 a codebase entirely during the build time, so it uses the excellent `inventory`
@@ -103,10 +105,6 @@ don't survive the trip:
   some digit/letter combinations don't form valid Rust tokens.
 - `em` units on fractional values (`1.5em`) don't tokenize - the `e` starts
   a Rust float exponent. Other units (`rem`, `px`, `s`, ...) are fine.
-- `calc(100% - 2px)` loses the space after `-` (it's treated as a
-  kebab-case joiner), producing invalid `calc()`.
-- Attribute selectors gain a space (`input [type="text"]`), turning them
-  into descendant selectors.
 - Single-quoted strings are Rust char literals and generally won't tokenize;
   use double quotes.
 - String escapes follow Rust rules, not CSS ones.

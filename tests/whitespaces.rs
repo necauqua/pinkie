@@ -21,39 +21,39 @@ macro_rules! test {
 test! { class ->
     .class {}
 
-    @".class { }"
+    @".class {}"
 }
 
 test! { id ->
     #id {}
 
-    @"#id { }"
+    @"#id {}"
 }
 
 test! { property ->
     --property: value;
     --kebab-prop: 123;
 
-    @"--property:value ; --kebab-prop:123 ;"
+    @"--property: value; --kebab-prop: 123;"
 }
 
 test! { kebab ->
     custom-element {}
 
-    @"custom-element { }"
+    @"custom-element {}"
 }
 
 test! { media ->
     @media (min-width: 600px) {}
 
-    @"@media( min-width:600px ) { }"
+    @"@media (min-width: 600px) {}"
 }
 
 test! { pseudoclass ->
     :root {}
     a:hover {}
 
-    @":root { } a:hover { }"
+    @":root {} a:hover {}"
 }
 
 test! { nesting_op ->
@@ -61,13 +61,13 @@ test! { nesting_op ->
     &.class {}
     &:hover {}
 
-    @"&{ } &.class { } &:hover { }"
+    @"& {} &.class {} &:hover {}"
 }
 
 test! { function_call ->
     color: var(--property);
 
-    @"color:var( --property ) ;"
+    @"color: var(--property);"
 }
 
 test! { suffixes ->
@@ -75,7 +75,7 @@ test! { suffixes ->
     margin: 15px;
     padding: 25%;
 
-    @"font-size:1rem ; margin:15px ; padding:25% ;"
+    @"font-size: 1rem; margin: 15px; padding: 25%;"
 }
 
 test! { hex_colors ->
@@ -84,26 +84,26 @@ test! { hex_colors ->
     background: #123456;
     outline-color: #00ff00;
 
-    @"color:#fff ; border-color:#c0ffee ; background:#123456 ; outline-color:#00ff00 ;"
+    @"color: #fff; border-color: #c0ffee; background: #123456; outline-color: #00ff00;"
 }
 
 test! { negative_values ->
     margin: -5px;
     top: -1.5rem;
 
-    @"margin:-5px ; top:-1.5rem ;"
+    @"margin: -5px; top: -1.5rem;"
 }
 
 test! { time_units ->
     transition: width 0.1s ease-in-out;
 
-    @"transition:width 0.1s ease-in-out ;"
+    @"transition: width 0.1s ease-in-out;"
 }
 
 test! { strings ->
     content: "hello world";
 
-    @r#"content:"hello world" ;"#
+    @r#"content: "hello world";"#
 }
 
 test! { raw_verbatim ->
@@ -115,21 +115,29 @@ test! { raw_verbatim ->
 test! { important ->
     width: 0 !important;
 
-    @"width:0 ! important ;"
+    @"width: 0 !important;"
 }
 
-// documents a known quirk: css `calc()` requires spaces around `-`,
-// but `-` is treated as a kebab-case joiner - use a raw string for calc
+// css `calc()` requires spaces around `-` - span-based whitespace
+// keeps them intact
 test! { calc_minus ->
     width: calc(100% - 2px);
 
-    @"width:calc( 100% -2px ) ;"
+    @"width: calc(100% - 2px);"
 }
 
-// documents a known quirk: the space before `[` makes this a descendant
-// selector instead of an attribute selector
+// grid line names legitimately need the space before `[` - it is
+// preserved as written
+test! { grid_line_names ->
+    grid-template-columns: auto [col] 1fr;
+
+    @"grid-template-columns: auto [col] 1fr;"
+}
+
+// no space before `[`, so this stays an attribute selector
+// rather than becoming a descendant selector
 test! { attribute_selector ->
     input[type="text"] {}
 
-    @r#"input [ type = "text" ] { }"#
+    @r#"input[type="text"] {}"#
 }
